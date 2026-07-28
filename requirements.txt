@@ -1,0 +1,33 @@
+# Deep learning
+# Note: The code mixes `keras` and `tensorflow.keras` imports.
+# Use a TensorFlow 2.x + Keras <3 pairing to avoid incompatibilities.
+# tensorflow==2.15.0
+# tensorflow-metal==1.1.0
+
+# Core ML stack
+numpy<2
+matplotlib
+scikit-learn
+scikit-image
+h5py
+numba
+pandas
+seaborn
+
+# Imaging & I/O
+opencv-python
+Pillow
+SimpleITK
+nibabel
+# pynrrd provides the `nrrd` module
+pynrrd
+
+# Data utilities
+split-folders
+
+# Optional (used by predict_resnet_2d.py)
+# Pinned to compatible version for Python 3.10+
+segmentation-models>=1.0.1
+
+# For jupyter notebooks
+jupyterlab
