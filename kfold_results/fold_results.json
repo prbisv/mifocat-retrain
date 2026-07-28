@@ -1,0 +1,42 @@
+[
+  {
+    "fold_id": 0,
+    "final_loss": 0.008180569857358932,
+    "final_val_loss": 0.014735163189470768,
+    "best_val_loss": 0.011824099346995354,
+    "epochs_trained": 41,
+    "checkpoint": "kfold_results/fold_0/fold_0_best_model.h5"
+  },
+  {
+    "fold_id": 1,
+    "final_loss": 0.007311693392693996,
+    "final_val_loss": 0.008162066340446472,
+    "best_val_loss": 0.008162066340446472,
+    "epochs_trained": 50,
+    "checkpoint": "/Users/iganarendra/Downloads/Code-Cardiac-Segmentation/kfold_results/fold_1/fold_1_best_model.h5"
+  },
+  {
+    "fold_id": 2,
+    "final_loss": 0.0076346853747963905,
+    "final_val_loss": 0.01006016694009304,
+    "best_val_loss": 0.008817905560135841,
+    "epochs_trained": 50,
+    "checkpoint": "/Users/iganarendra/Downloads/Code-Cardiac-Segmentation/kfold_results/fold_2/fold_2_best_model.h5"
+  },
+  {
+    "fold_id": 3,
+    "final_loss": 0.0067266542464494705,
+    "final_val_loss": 0.016786934807896614,
+    "best_val_loss": 0.0062924535013735294,
+    "epochs_trained": 50,
+    "checkpoint": "/Users/iganarendra/Downloads/Code-Cardiac-Segmentation/kfold_results/fold_3/fold_3_best_model.h5"
+  },
+  {
+    "fold_id": 4,
+    "final_loss": 0.009630467742681503,
+    "final_val_loss": 0.013821421191096306,
+    "best_val_loss": 0.01070710550993681,
+    "epochs_trained": 40,
+    "checkpoint": "/Users/iganarendra/Downloads/Code-Cardiac-Segmentation/kfold_results/fold_4/fold_4_best_model.h5"
+  }
+]
