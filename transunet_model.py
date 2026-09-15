@@ -193,7 +193,7 @@ def drop_path_(inputs, drop_prob, is_training):
         return inputs
     keep_prob = 1.0 - drop_prob
     input_shape = tf.shape(inputs)
-    batch_num = input_shape[0]; rank = len(input_shape)
+    batch_num = input_shape[0]; rank = len(inputs.shape)
     shape = (batch_num,) + (1,) * (rank - 1)
     random_tensor = keep_prob + tf.random.uniform(shape, dtype=inputs.dtype)
     path_mask = tf.floor(random_tensor)

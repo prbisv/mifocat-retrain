@@ -99,6 +99,27 @@ def mifocat_loss(alpha=0.25, gamma=2.0, r1=1.0, r2=1.0, r3=1.0):
 
     return loss
 
+def mifocat_components(y_true, y_pred, alpha=0.25, gamma=2.0):
+    """
+    Same three terms as mifocat_loss(), returned separately (unweighted by
+    r1/r2/r3) so their gradients w.r.t. model weights can be measured
+    independently instead of only as a single combined scalar.
+    """
+    l_mi = tf.reduce_mean(tf.square(y_true - y_pred))
+
+    l_cat = tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+    l_cat = tf.reduce_mean(l_cat)
+
+    epsilon = K.epsilon()
+    y_pred_clipped = tf.clip_by_value(y_pred, epsilon, 1. - epsilon)
+    cross_entropy = -y_true * tf.math.log(y_pred_clipped)
+    weight = alpha * tf.pow((1 - y_pred_clipped), gamma)
+    l_fo = tf.reduce_sum(weight * cross_entropy, axis=-1)
+    l_fo = tf.reduce_mean(l_fo)
+
+    return {'mse': l_mi, 'focal': l_fo, 'cat': l_cat}
+
+
 def mean_iou(y_true, y_pred):
     """
     Intersection over Union (IoU) metric implementation.

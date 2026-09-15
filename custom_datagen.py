@@ -20,6 +20,14 @@ import cv2
 
 from math import ceil
 
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from proposed_model import mifocat_components
+except ImportError:
+    tf = None
+    keras = None
+
 
 def load_img(img_dir: str, img_list: List[str], target_size: Tuple[int, int] = (256, 256),
              is_mask: bool = False, num_classes: int = 4) -> np.ndarray:
@@ -85,7 +93,12 @@ def load_img(img_dir: str, img_list: List[str], target_size: Tuple[int, int] = (
     
     if is_mask:
         # Convert masks to one-hot encoding
-        # Assuming mask values are 0, 1, 2, 3 for 4 classes
+        # PNG exports commonly encode four classes as 0, 85, 170, 255,
+        # while NumPy masks may already contain class IDs 0, 1, 2, 3.
+        if stacked.max() > num_classes - 1:
+            stacked = np.rint(
+                stacked.astype('float32') * (num_classes - 1) / 255.0
+            ).astype('int32')
         # Shape: (N, H, W) -> (N, H, W, num_classes)
         one_hot = np.zeros((stacked.shape[0], stacked.shape[1], stacked.shape[2], num_classes), dtype='float32')
         for c in range(num_classes):
@@ -244,7 +257,74 @@ class FoldAwareDataLoader:
             return file_list, str(self.base_dir)
         else:
             raise ValueError(f"✗ CRITICAL: No valid patient IDs found! Checked {len(patient_ids)} patient IDs in {self.base_dir}")
-    
+
+    def get_paired_file_list(self, patient_ids: List[str],
+                            image_subdir: str = 'images',
+                            mask_subdir: str = 'groundtruth') -> Tuple[List[str], List[str]]:
+        """
+        Get image/mask file paths matched by filename, not by directory glob
+        order. In this dataset each patient's `images/` and `groundtruth/`
+        folders commonly hold different slice counts (e.g. `Pasien1_5_ed.png`
+        with no `Pasien1_5_ed_gt.png`, or vice versa) — pairing by index
+        position (as get_file_list()'s two independent calls implicitly do
+        when zipped downstream) silently mismatches images with the wrong
+        mask, or desyncs batch sizes entirely once one list runs out first,
+        which surfaces as a "Invalid input shapes" Keras crash mid-epoch.
+        Matching by stem, and only keeping slices present in both folders,
+        is the only way to keep X/Y aligned.
+
+        Returns:
+            Tuple of (img_files, mask_files): same length, same order, each
+            index is a genuine (image, mask) pair.
+        """
+        def stem_key(filename: str) -> str:
+            name = Path(filename).stem
+            if name.lower().endswith('_gt'):
+                name = name[:-3]
+            return name
+
+        img_files: List[str] = []
+        mask_files: List[str] = []
+        matched_patients = 0
+        dropped_img_only = 0
+        dropped_mask_only = 0
+
+        for pid in patient_ids:
+            img_dir = self.base_dir / f"Pasien {pid}" / image_subdir
+            mask_dir = self.base_dir / f"Pasien {pid}" / mask_subdir
+            if not img_dir.exists() or not mask_dir.exists():
+                continue
+
+            img_map = {}
+            for ext in ('*.npy', '*.png', '*.jpg', '*.jpeg'):
+                for f in img_dir.glob(ext):
+                    img_map[stem_key(f.name)] = f
+            mask_map = {}
+            for ext in ('*.npy', '*.png', '*.jpg', '*.jpeg'):
+                for f in mask_dir.glob(ext):
+                    mask_map[stem_key(f.name)] = f
+
+            common = sorted(set(img_map) & set(mask_map))
+            if not common:
+                continue
+
+            matched_patients += 1
+            dropped_img_only += len(img_map.keys() - mask_map.keys())
+            dropped_mask_only += len(mask_map.keys() - img_map.keys())
+            for key in common:
+                img_files.append(str(img_map[key]))
+                mask_files.append(str(mask_map[key]))
+
+        if not img_files:
+            raise ValueError(
+                f"✗ CRITICAL: No matching image/mask pairs found! Checked {len(patient_ids)} patient IDs in {self.base_dir}"
+            )
+
+        print(f"[FoldAwareDataLoader.get_paired_file_list] ✓ {matched_patients} patients, "
+              f"{len(img_files)} matched image/mask pairs "
+              f"(dropped {dropped_img_only} images with no mask, {dropped_mask_only} masks with no image)")
+        return img_files, mask_files
+
     def get_generators(self, fold_id: int, batch_size: int = 8,
                       image_subdir: str = 'images',
                       mask_subdir: str = 'groundtruth',
@@ -276,14 +356,11 @@ class FoldAwareDataLoader:
         print(f"[FoldAwareDataLoader] Train patients: {train_patients[:5]}{'...' if len(train_patients) > 5 else ''}")
         print(f"[FoldAwareDataLoader] Val patients: {val_patients[:5]}{'...' if len(val_patients) > 5 else ''}")
         
-        # Get file lists (now returns FULL PATHS)
-        train_img_files, _ = self.get_file_list(train_patients, image_subdir)
-        val_img_files, _ = self.get_file_list(val_patients, image_subdir)
-        
-        # Get mask files (also full paths)
-        train_mask_files, _ = self.get_file_list(train_patients, mask_subdir)
-        val_mask_files, _ = self.get_file_list(val_patients, mask_subdir)
-        
+        # Get matched (image, mask) pairs — same length and order by construction,
+        # unlike two independent get_file_list() calls zipped by index.
+        train_img_files, train_mask_files = self.get_paired_file_list(train_patients, image_subdir, mask_subdir)
+        val_img_files, val_mask_files = self.get_paired_file_list(val_patients, image_subdir, mask_subdir)
+
         print(f"[FoldAwareDataLoader] Train: {len(train_img_files)} images, {len(train_mask_files)} masks")
         print(f"[FoldAwareDataLoader] Val: {len(val_img_files)} images, {len(val_mask_files)} masks")
         
@@ -306,5 +383,46 @@ class FoldAwareDataLoader:
         # Use ceil so we do not silently drop the final partial batch; integer division was collapsing to 1 step
         train_steps = max(1, ceil(len(train_img_files) / float(batch_size)))
         val_steps = max(1, ceil(len(val_img_files) / float(batch_size)))
-        
+
         return train_gen, val_gen, train_steps, val_steps
+
+
+class MIFOCATGradientMonitor(keras.callbacks.Callback if keras is not None else object):
+    """
+    Records the global L2 gradient norm of each MIFOCAT loss component
+    (MSE, focal, categorical cross-entropy) on one fixed training batch,
+    once per epoch. The batch is fixed at construction time and is
+    independent of the generator driving the actual optimizer step, so the
+    measurement isolates "how much gradient signal does each component
+    produce" from epoch to epoch, on the same inputs.
+    """
+
+    def __init__(self, fixed_x: np.ndarray, fixed_y: np.ndarray, output_path,
+                 alpha: float = 0.25, gamma: float = 2.0):
+        super().__init__()
+        self.fixed_x = tf.constant(fixed_x)
+        self.fixed_y = tf.constant(fixed_y)
+        self.alpha = alpha
+        self.gamma = gamma
+        self.output_path = Path(output_path)
+        self.history = []
+
+    def on_epoch_end(self, epoch, logs=None):
+        with tf.GradientTape(persistent=True) as tape:
+            y_pred = self.model(self.fixed_x, training=True)
+            components = mifocat_components(self.fixed_y, y_pred, alpha=self.alpha, gamma=self.gamma)
+
+        record = {'epoch': epoch + 1}
+        for name, component_loss in components.items():
+            grads = [g for g in tape.gradient(component_loss, self.model.trainable_variables) if g is not None]
+            record[name] = float(tf.linalg.global_norm(grads).numpy()) if grads else 0.0
+        del tape
+
+        self.history.append(record)
+        print(f"[MIFOCATGradientMonitor] Epoch {epoch + 1}: "
+              f"mse={record['mse']:.6f} focal={record['focal']:.6f} cat={record['cat']:.6f}")
+
+    def on_train_end(self, logs=None):
+        with open(self.output_path, 'w') as f:
+            json.dump(self.history, f, indent=2)
+        print(f"[MIFOCATGradientMonitor] Saved gradient history: {self.output_path}")

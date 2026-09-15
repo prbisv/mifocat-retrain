@@ -1,0 +1,20 @@
+# Dataset (not stored in this repo)
+acdc2017/
+
+# Saved/trained model weights & checkpoints (too large for GitHub)
+*.h5
+*.hdf5
+*.keras
+*.pt
+*.pth
+*.ckpt
+*.pb
+*.onnx
+*.safetensors
+*.weights
+*.tflite
+transunet_kfold_results/checkpoints/
+
+# Jupyter / Python build artifacts
+__pycache__/
+.ipynb_checkpoints/

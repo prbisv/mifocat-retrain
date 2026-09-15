@@ -1,0 +1,47 @@
+[
+  {
+    "fold_id": 0,
+    "final_loss": 0.0465683713555336,
+    "final_val_loss": 0.4022790193557739,
+    "best_val_loss": 0.32710039615631104,
+    "epochs_trained": 38,
+    "checkpoint": "kfold_results_gradmon/unet/fold_0/fold_0_best_model.h5",
+    "gradient_history": "kfold_results_gradmon/unet/fold_0/fold_0_gradient_history.json"
+  },
+  {
+    "fold_id": 1,
+    "final_loss": 0.11292462795972824,
+    "final_val_loss": 1.5336889028549194,
+    "best_val_loss": 0.4295559525489807,
+    "epochs_trained": 20,
+    "checkpoint": "kfold_results_gradmon/unet/fold_1/fold_1_best_model.h5",
+    "gradient_history": "kfold_results_gradmon/unet/fold_1/fold_1_gradient_history.json"
+  },
+  {
+    "fold_id": 2,
+    "final_loss": 0.06421266496181488,
+    "final_val_loss": 0.31338658928871155,
+    "best_val_loss": 0.26101216673851013,
+    "epochs_trained": 34,
+    "checkpoint": "kfold_results_gradmon/unet/fold_2/fold_2_best_model.h5",
+    "gradient_history": "kfold_results_gradmon/unet/fold_2/fold_2_gradient_history.json"
+  },
+  {
+    "fold_id": 3,
+    "final_loss": 0.14781755208969116,
+    "final_val_loss": 0.433059960603714,
+    "best_val_loss": 0.400754451751709,
+    "epochs_trained": 20,
+    "checkpoint": "kfold_results_gradmon/unet/fold_3/fold_3_best_model.h5",
+    "gradient_history": "kfold_results_gradmon/unet/fold_3/fold_3_gradient_history.json"
+  },
+  {
+    "fold_id": 4,
+    "final_loss": 0.11018169671297073,
+    "final_val_loss": 3.4996049404144287,
+    "best_val_loss": 0.27300265431404114,
+    "epochs_trained": 25,
+    "checkpoint": "kfold_results_gradmon/unet/fold_4/fold_4_best_model.h5",
+    "gradient_history": "kfold_results_gradmon/unet/fold_4/fold_4_gradient_history.json"
+  }
+]

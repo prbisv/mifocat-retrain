@@ -1,0 +1,8 @@
+{
+  "n_folds_completed": 5,
+  "n_folds_total": 5,
+  "val_loss_mean": 1.2364038825035095,
+  "val_loss_std": 1.216843792736158,
+  "val_loss_min": 0.31338658928871155,
+  "val_loss_max": 3.4996049404144287
+}
